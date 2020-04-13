@@ -18,6 +18,8 @@ import Entity.Employee;
  */
 public class EmployeeController extends HttpServlet {
 	
+	RequestDispatcher dispatcher=null;
+	
 	// create reference variable
 	
 	EmployeeDAO employeeDAO=null;
@@ -34,26 +36,103 @@ public class EmployeeController extends HttpServlet {
    
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		
-			// call the dao method to get the list of employee objects
-		
-			List<Employee> list=employeeDAO.get();
+	String action=request.getParameter("action");
+	
+	if(action == null) {
+		action="LIST";
+	}
+	
+	switch(action) {
+		case "LIST":
+			listEmployees(request,response);
+			break;
 			
-			// Add employees to request object
+		case "EDIT":
+			getSingleEmployee(request,response);
+			break;
 			
-			request.setAttribute("list", list);
-		
-			//Get the request Dispatcher
+		case "DELETE":
+			deleteEmployee(request,response);
+			break;
 			
-			RequestDispatcher dispatcher=request.getRequestDispatcher("/views/employee-list.jsp");
-			
-			//forward req and res objects
-			
-			dispatcher.forward(request, response);
+		default:
+			listEmployees(request,response);
+			break;
+	}
+
 	}
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		doGet(request, response);
+		
+		String id=request.getParameter("id");
+		String name=request.getParameter("firstname");
+		String dob=request.getParameter("dob");
+		String department=request.getParameter("department");
+		
+		Employee e=new Employee();
+		
+		e.setName(name);
+		e.setDob(dob);
+		e.setDepartment(department);
+		if(id.isEmpty() || id==null)
+		{
+			//Save Operation
+			if(employeeDAO.save(e))
+			{
+			request.setAttribute("message", "Saved Successfully");
+			}
+		}
+		else
+		{
+			//Update Operation
+			e.setId(Integer.parseInt(id));
+			if(employeeDAO.update(e))
+			{
+			request.setAttribute("message", "Updated Successfully");
+			}
+		}
+	
+		listEmployees(request,response);
+
+	} 
+	
+	public void listEmployees(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+	{
+		// call the dao method to get the list of employee objects
+		
+		List<Employee> list=employeeDAO.get();
+		
+		// Add employees to request object
+		
+		request.setAttribute("list", list);
+	
+		//Get the request Dispatcher
+		
+		dispatcher=request.getRequestDispatcher("/views/employee-list.jsp");
+		
+		//forward req and res objects
+		
+		dispatcher.forward(request, response);
+	}
+	
+	public void getSingleEmployee(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		String id=request.getParameter("id");
+		Employee employee=employeeDAO.get(Integer.parseInt(id));
+		request.setAttribute("employee", employee);
+		dispatcher = request.getRequestDispatcher("/views/employee-add.jsp");
+		
+		//forward req and res objects
+		dispatcher.forward(request, response);
+	}
+	
+	public void deleteEmployee(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException{
+		
+		String id=request.getParameter("id");
+		if(employeeDAO.delete(Integer.parseInt(id)))
+		{
+			request.setAttribute("message", "Record Deleted Succesfully");
+		}
+		listEmployees(request,response);
 	}
 
 }
